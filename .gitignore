@@ -1,4 +1,4 @@
 node_modules/
 
-package*
 sessions*
+package-lock*
