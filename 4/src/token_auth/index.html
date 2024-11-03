@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login and Registration</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <main id="main-holder">
+        <a href="/logout" id="logout">Logout</a>
+
+        <div id="form-container">
+            <div id="login-container">
+                <h2 id="login-title">Login</h2>
+                <div id="login-error-msg-holder">
+                    <p id="login-error-msg" class="error-msg">Invalid email <span id="error-msg-second-line">and/or
+                            password</span></p>
+                </div>
+                <form id="login-form" action="/api/login" method="post">
+                    <input type="email" name="login" id="email-field" class="login-form-field" placeholder="Email"
+                        required>
+                    <input type="password" name="password" id="password-field" class="login-form-field"
+                        placeholder="Password" required>
+                    <input type="submit" value="Login" id="login-form-submit">
+                </form>
+            </div>
+
+            <div id="registration-container">
+                <h2 id="registration-title">Register</h2>
+                <div id="registration-error-msg-holder">
+                    <p id="registration-error-msg" class="error-msg">Registration failed. Please try again.</p>
+                </div>
+                <form id="registration-form" action="/api/register" method="post">
+                    <input type="email" name="email" id="register-email-field" class="login-form-field"
+                        placeholder="Email" required>
+                    <input type="text" name="username" id="register-username-field" class="login-form-field"
+                        placeholder="Username" required>
+                    <input type="password" name="register-password" id="register-password-field"
+                        class="login-form-field" placeholder="Password" required>
+                    <input type="submit" value="Register" id="registration-form-submit">
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        #main-holder {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        #form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #login-container,
+        #registration-container {
+            padding: 20px;
+            background-color: #e9e9e9;
+            border-radius: 10px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .login-form-field {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        #login-form-submit,
+        #registration-form-submit {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        #login-form-submit:hover,
+        #registration-form-submit:hover {
+            background-color: #45a049;
+        }
+
+        #logout {
+            display: block;
+            margin-bottom: 20px;
+            color: #007BFF;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .error-msg {
+            color: #D8000C;
+            background-color: #FFD2D2;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+    </style>
+
+    <script>
+        const session = sessionStorage.getItem('session');
+        let token;
+
+        try {
+            token = JSON.parse(session).token;
+        } catch (e) { }
+
+        if (token) {
+            axios.get('/', {
+                headers: {
+                    Authorization: token
+                }
+            }).then((response) => {
+                const { username } = response.data.user;
+                if (username) {
+                    const mainHolder = document.getElementById("main-holder");
+                    const loginErrorMsg = document.getElementById("login-error-msg");
+                    loginErrorMsg.remove();
+                    mainHolder.append(`Hello ${username}`);
+                    logoutLink.style.opacity = 1;
+                }
+            });
+        }
+
+        const loginForm = document.getElementById("login-form");
+        const loginButton = document.getElementById("login-form-submit");
+        const loginErrorMsg = document.getElementById("login-error-msg");
+        const logoutLink = document.getElementById("logout");
+
+        logoutLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('session');
+            location.reload();
+        });
+
+        loginButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            const email = loginForm.login.value;
+            const password = loginForm.password.value;
+
+            axios({
+                method: 'post',
+                url: '/api/login',
+                data: {
+                    login: email,
+                    password
+                }
+            }).then((response) => {
+                const { username } = response.data;
+                sessionStorage.setItem('session', JSON.stringify(response.data));
+                location.reload();
+            }).catch((response) => {
+                loginErrorMsg.classList.add('show');
+            });
+        });
+
+        const registrationForm = document.getElementById("registration-form");
+        const registrationButton = document.getElementById("registration-form-submit");
+        const registrationErrorMsg = document.getElementById("registration-error-msg");
+
+        registrationButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            const email = registrationForm.email.value;
+            const username = registrationForm.username.value;
+            const password = registrationForm['register-password'].value;
+
+            axios({
+                method: 'post',
+                url: '/api/register',
+                data: {
+                    username: username,
+                    password: password,
+                    email: email
+                }
+            }).then((response) => {
+                alert('Registration successful! You can now log in.');
+                registrationForm.reset();
+            }).catch((response) => {
+                registrationErrorMsg.classList.add('show');
+            });
+        });
+    </script>
+
+</body>
+
+</html>
